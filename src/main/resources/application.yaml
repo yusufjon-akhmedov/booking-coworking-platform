@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: coworking-booking
+
+  datasource:
+    url: jdbc:postgresql://localhost:5436/coworking_booking
+    username: postgres
+    password: 1234
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your_email@gmail.com
+    password: your_app_password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8082
+
+app:
+  jwt:
+    secret: ZjQ2YjBkY2M2NzJjNGU4ODk5YmRmYjM0N2Y2NDI3OTc2MGY4N2M1N2I5ODVhMjRmN2M5NjI4NTM2N2M4YjEzZQ==
+    access-token-expiration: 86400000
