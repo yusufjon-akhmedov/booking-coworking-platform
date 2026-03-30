@@ -39,3 +39,4 @@ app:
   jwt:
     secret: ZjQ2YjBkY2M2NzJjNGU4ODk5YmRmYjM0N2Y2NDI3OTc2MGY4N2M1N2I5ODVhMjRmN2M5NjI4NTM2N2M4YjEzZQ==
     access-token-expiration: 86400000
+    refresh-token-expiration: 604800000

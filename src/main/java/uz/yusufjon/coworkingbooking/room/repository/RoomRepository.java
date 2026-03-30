@@ -1,6 +1,8 @@
 package uz.yusufjon.coworkingbooking.room.repository;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -8,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import uz.yusufjon.coworkingbooking.booking.entity.BookingStatus;
 import uz.yusufjon.coworkingbooking.room.entity.Room;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collection;
@@ -17,6 +20,8 @@ import java.util.Optional;
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
     boolean existsByName(String name);
+
+    boolean existsByNameAndIdNot(String name, Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from Room r where r.id = :id")
@@ -44,5 +49,21 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             @Param("startLocalTime") LocalTime startLocalTime,
             @Param("endLocalTime") LocalTime endLocalTime,
             @Param("statuses") Collection<BookingStatus> statuses
+    );
+
+    @Query("""
+            select r
+            from Room r
+            where (:active is null or r.active = :active)
+              and (:minCapacity is null or r.capacity >= :minCapacity)
+              and (:maxHourlyPrice is null or r.hourlyPrice <= :maxHourlyPrice)
+              and (:name is null or lower(r.name) like lower(concat('%', :name, '%')))
+            """)
+    Page<Room> findAllByFilters(
+            @Param("active") Boolean active,
+            @Param("minCapacity") Integer minCapacity,
+            @Param("maxHourlyPrice") BigDecimal maxHourlyPrice,
+            @Param("name") String name,
+            Pageable pageable
     );
 }

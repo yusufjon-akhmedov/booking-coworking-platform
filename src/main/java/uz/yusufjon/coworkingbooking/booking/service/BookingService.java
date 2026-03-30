@@ -1,10 +1,12 @@
 package uz.yusufjon.coworkingbooking.booking.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.yusufjon.coworkingbooking.booking.dto.BookingResponse;
+import uz.yusufjon.coworkingbooking.booking.dto.BookingDetailResponse;
 import uz.yusufjon.coworkingbooking.booking.dto.CancelBookingRequest;
 import uz.yusufjon.coworkingbooking.booking.dto.CreateBookingRequest;
 import uz.yusufjon.coworkingbooking.booking.dto.RescheduleBookingRequest;
@@ -14,8 +16,10 @@ import uz.yusufjon.coworkingbooking.booking.repository.BookingRepository;
 import uz.yusufjon.coworkingbooking.common.exception.BadRequestException;
 import uz.yusufjon.coworkingbooking.common.exception.BookingConflictException;
 import uz.yusufjon.coworkingbooking.common.exception.ResourceNotFoundException;
+import uz.yusufjon.coworkingbooking.common.response.PageResponse;
 import uz.yusufjon.coworkingbooking.room.entity.Room;
 import uz.yusufjon.coworkingbooking.room.repository.RoomRepository;
+import uz.yusufjon.coworkingbooking.user.entity.Role;
 import uz.yusufjon.coworkingbooking.user.entity.User;
 import uz.yusufjon.coworkingbooking.user.repository.UserRepository;
 
@@ -72,6 +76,46 @@ public class BookingService {
         return bookingRepository.findAllByUserIdOrderByStartTimeDesc(authenticatedUserId).stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public BookingDetailResponse getBookingDetails(Long authenticatedUserId, Role role, Long bookingId) {
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        validateBookingAccess(booking, authenticatedUserId, role);
+        return mapToDetailResponse(booking);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<BookingResponse> getAdminBookings(
+            BookingStatus status,
+            Long roomId,
+            LocalDateTime from,
+            LocalDateTime to,
+            Pageable pageable
+    ) {
+        validateDateRange(from, to);
+        return PageResponse.from(
+                bookingRepository.findAllByFilters(status, roomId, from, to, pageable)
+                        .map(this::mapToResponse)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<BookingResponse> getBookingHistory(
+            Long authenticatedUserId,
+            BookingStatus status,
+            Long roomId,
+            LocalDateTime from,
+            LocalDateTime to,
+            Pageable pageable
+    ) {
+        validateDateRange(from, to);
+        return PageResponse.from(
+                bookingRepository.findAllByUserIdAndFilters(authenticatedUserId, status, roomId, from, to, pageable)
+                        .map(this::mapToResponse)
+        );
     }
 
     @Transactional
@@ -153,6 +197,20 @@ public class BookingService {
         }
     }
 
+    private void validateBookingAccess(Booking booking, Long authenticatedUserId, Role role) {
+        if (role == Role.ADMIN) {
+            return;
+        }
+
+        validateBookingOwnership(booking, authenticatedUserId);
+    }
+
+    private void validateDateRange(LocalDateTime from, LocalDateTime to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new BadRequestException("From date must be before or equal to to date");
+        }
+    }
+
     private void validateRequestTimes(LocalDateTime startTime, LocalDateTime endTime) {
         if (!endTime.isAfter(startTime)) {
             throw new BadRequestException("End time must be after start time");
@@ -193,6 +251,23 @@ public class BookingService {
                 .endTime(booking.getEndTime())
                 .notes(booking.getNotes())
                 .createdAt(booking.getCreatedAt())
+                .build();
+    }
+
+    private BookingDetailResponse mapToDetailResponse(Booking booking) {
+        return BookingDetailResponse.builder()
+                .id(booking.getId())
+                .userId(booking.getUser().getId())
+                .roomId(booking.getRoom().getId())
+                .roomName(booking.getRoom().getName())
+                .status(booking.getStatus().name())
+                .startTime(booking.getStartTime())
+                .endTime(booking.getEndTime())
+                .notes(booking.getNotes())
+                .cancelledAt(booking.getCancelledAt())
+                .cancellationReason(booking.getCancellationReason())
+                .createdAt(booking.getCreatedAt())
+                .updatedAt(booking.getUpdatedAt())
                 .build();
     }
 }
