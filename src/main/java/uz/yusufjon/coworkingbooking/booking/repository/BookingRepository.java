@@ -10,6 +10,7 @@ import uz.yusufjon.coworkingbooking.booking.entity.BookingStatus;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -57,5 +58,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     Optional<Booking> findByIdForUpdate(@Param("id") Long id);
 
+    @Query("""
+            select b
+            from Booking b
+            join fetch b.user
+            join fetch b.room
+            where b.user.id = :userId
+            order by b.startTime desc
+            """)
+    List<Booking> findAllByUserIdOrderByStartTimeDesc(@Param("userId") Long userId);
 
 }

@@ -1,6 +1,7 @@
 package uz.yusufjon.coworkingbooking.booking.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.yusufjon.coworkingbooking.booking.dto.BookingResponse;
@@ -31,11 +32,11 @@ public class BookingService {
     private final RoomRepository roomRepository;
 
     @Transactional
-    public BookingResponse createBooking(CreateBookingRequest request) {
+    public BookingResponse createBooking(Long authenticatedUserId, CreateBookingRequest request) {
         validateRequestTimes(request.getStartTime(), request.getEndTime());
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
+        User user = userRepository.findById(authenticatedUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + authenticatedUserId));
 
         Room room = roomRepository.findByIdForUpdate(request.getRoomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found with id: " + request.getRoomId()));
@@ -66,10 +67,19 @@ public class BookingService {
         return mapToResponse(savedBooking);
     }
 
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getMyBookings(Long authenticatedUserId) {
+        return bookingRepository.findAllByUserIdOrderByStartTimeDesc(authenticatedUserId).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     @Transactional
-    public BookingResponse cancelBooking(Long bookingId, CancelBookingRequest request) {
+    public BookingResponse cancelBooking(Long authenticatedUserId, Long bookingId, CancelBookingRequest request) {
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        validateBookingOwnership(booking, authenticatedUserId);
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BadRequestException("Booking is already cancelled");
@@ -92,11 +102,13 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse rescheduleBooking(Long bookingId, RescheduleBookingRequest request) {
+    public BookingResponse rescheduleBooking(Long authenticatedUserId, Long bookingId, RescheduleBookingRequest request) {
         validateRequestTimes(request.getStartTime(), request.getEndTime());
 
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        validateBookingOwnership(booking, authenticatedUserId);
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BadRequestException("Cancelled booking cannot be rescheduled");
@@ -133,6 +145,12 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
         return mapToResponse(savedBooking);
+    }
+
+    private void validateBookingOwnership(Booking booking, Long authenticatedUserId) {
+        if (!booking.getUser().getId().equals(authenticatedUserId)) {
+            throw new AccessDeniedException("You are not allowed to manage this booking");
+        }
     }
 
     private void validateRequestTimes(LocalDateTime startTime, LocalDateTime endTime) {
