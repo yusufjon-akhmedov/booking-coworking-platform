@@ -86,6 +86,7 @@ flowchart TD
 * **Spring Actuator**
 * **PostgreSQL**
 * **Flyway**
+* **Lombok**
 * **JJWT** 0.13.0
 * **Springdoc OpenAPI** 2.8.6
 * **JUnit 5**
