@@ -16,6 +16,9 @@ By default the local app still expects:
 
 - App: `http://localhost:8082`
 - PostgreSQL: `localhost:5436`
+- Swagger UI: `http://localhost:8082/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8082/v3/api-docs`
+- OpenAPI YAML: `http://localhost:8082/v3/api-docs.yaml`
 
 You can also override config with environment variables:
 
@@ -36,6 +39,7 @@ Docker Compose runs:
 
 - App on host port `8082` by default
 - PostgreSQL on host port `15436` by default
+- Swagger UI on `http://localhost:8082/swagger-ui/index.html`
 
 Because Docker now also uses host port `8082`, stop any locally running Spring Boot process before starting the Compose app, or override `APP_HOST_PORT` in `.env`.
 
@@ -140,3 +144,4 @@ mvn -q test
 4. Verify Flyway ran by checking app logs for migration success.
 5. Register/login through the API on `http://localhost:8082`.
 6. Confirm the app can create and query data against the Docker PostgreSQL instance.
+7. Open Swagger UI at `http://localhost:8082/swagger-ui/index.html` and verify protected endpoints work after authorizing with a JWT access token.

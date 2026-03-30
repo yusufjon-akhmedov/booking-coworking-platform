@@ -1,6 +1,12 @@
 package uz.yusufjon.coworkingbooking.user.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -12,17 +18,23 @@ import uz.yusufjon.coworkingbooking.common.response.PageResponse;
 import uz.yusufjon.coworkingbooking.security.service.CustomUserDetails;
 import uz.yusufjon.coworkingbooking.user.dto.UserResponse;
 import uz.yusufjon.coworkingbooking.user.service.UserService;
-import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Tag(name = "Users", description = "Current profile and admin-only user management endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
 
     private final UserService userService;
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get current user profile", description = "Returns the profile of the authenticated user.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User profile fetched successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content)
+    })
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
@@ -32,6 +44,12 @@ public class UserController {
 
     @GetMapping("/customers")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "List customers", description = "Returns a paginated list of customer accounts. Admin only.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Customers fetched successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Admin role required", content = @Content)
+    })
     public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getCustomers(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
@@ -41,6 +59,14 @@ public class UserController {
 
     @PatchMapping("/{id}/disable")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Disable a customer", description = "Disables a customer account and revokes their refresh tokens. Admin only.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User disabled successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid state change", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Admin role required", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+    })
     public ResponseEntity<ApiResponse<UserResponse>> disableCustomer(@PathVariable Long id) {
         UserResponse response = userService.disableCustomer(id);
         return ResponseEntity.ok(new ApiResponse<>("User disabled successfully", response));
@@ -48,6 +74,14 @@ public class UserController {
 
     @PatchMapping("/{id}/enable")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Enable a customer", description = "Re-enables a previously disabled customer account. Admin only.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User enabled successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid state change", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Admin role required", content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+    })
     public ResponseEntity<ApiResponse<UserResponse>> enableCustomer(@PathVariable Long id) {
         UserResponse response = userService.enableCustomer(id);
         return ResponseEntity.ok(new ApiResponse<>("User enabled successfully", response));
