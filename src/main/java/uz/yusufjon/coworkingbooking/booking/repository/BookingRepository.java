@@ -85,18 +85,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             value = """
                     select b
                     from Booking b
-                    where (:status is null or b.status = :status)
-                      and (:roomId is null or b.room.id = :roomId)
-                      and (:from is null or b.startTime >= :from)
-                      and (:to is null or b.endTime <= :to)
+                    where b.status = coalesce(:status, b.status)
+                      and b.room.id = coalesce(:roomId, b.room.id)
+                      and b.startTime >= coalesce(:from, b.startTime)
+                      and b.endTime <= coalesce(:to, b.endTime)
                     """,
             countQuery = """
                     select count(b)
                     from Booking b
-                    where (:status is null or b.status = :status)
-                      and (:roomId is null or b.room.id = :roomId)
-                      and (:from is null or b.startTime >= :from)
-                      and (:to is null or b.endTime <= :to)
+                    where b.status = coalesce(:status, b.status)
+                      and b.room.id = coalesce(:roomId, b.room.id)
+                      and b.startTime >= coalesce(:from, b.startTime)
+                      and b.endTime <= coalesce(:to, b.endTime)
                     """
     )
     Page<Booking> findAllByFilters(
@@ -113,19 +113,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                     select b
                     from Booking b
                     where b.user.id = :userId
-                      and (:status is null or b.status = :status)
-                      and (:roomId is null or b.room.id = :roomId)
-                      and (:from is null or b.startTime >= :from)
-                      and (:to is null or b.endTime <= :to)
+                      and b.status = coalesce(:status, b.status)
+                      and b.room.id = coalesce(:roomId, b.room.id)
+                      and b.startTime >= coalesce(:from, b.startTime)
+                      and b.endTime <= coalesce(:to, b.endTime)
                     """,
             countQuery = """
                     select count(b)
                     from Booking b
                     where b.user.id = :userId
-                      and (:status is null or b.status = :status)
-                      and (:roomId is null or b.room.id = :roomId)
-                      and (:from is null or b.startTime >= :from)
-                      and (:to is null or b.endTime <= :to)
+                      and b.status = coalesce(:status, b.status)
+                      and b.room.id = coalesce(:roomId, b.room.id)
+                      and b.startTime >= coalesce(:from, b.startTime)
+                      and b.endTime <= coalesce(:to, b.endTime)
                     """
     )
     Page<Booking> findAllByUserIdAndFilters(

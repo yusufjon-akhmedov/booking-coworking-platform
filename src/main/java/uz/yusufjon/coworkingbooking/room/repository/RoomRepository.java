@@ -57,7 +57,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             where (:active is null or r.active = :active)
               and (:minCapacity is null or r.capacity >= :minCapacity)
               and (:maxHourlyPrice is null or r.hourlyPrice <= :maxHourlyPrice)
-              and (:name is null or lower(r.name) like lower(concat('%', :name, '%')))
+              and lower(r.name) like lower(concat('%', coalesce(:name, ''), '%'))
             """)
     Page<Room> findAllByFilters(
             @Param("active") Boolean active,
