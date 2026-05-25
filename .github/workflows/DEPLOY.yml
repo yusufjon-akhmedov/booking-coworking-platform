@@ -45,7 +45,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh
 
-          printf '%s\n' "${{ secrets.CONTABO_SSH_KEY }}" > ~/.ssh/contabo_key
+          printf '%s' "${{ secrets.CONTABO_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/contabo_key
           chmod 600 ~/.ssh/contabo_key
 
           printf '%s\n' "${{ secrets.CONTABO_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
