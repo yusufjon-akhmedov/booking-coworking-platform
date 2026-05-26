@@ -11,11 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import uz.yusufjon.coworkingbooking.auth.dto.AuthResponse;
-import uz.yusufjon.coworkingbooking.auth.dto.LoginRequest;
-import uz.yusufjon.coworkingbooking.auth.dto.RefreshTokenRequest;
-import uz.yusufjon.coworkingbooking.auth.dto.RegisterRequest;
+import uz.yusufjon.coworkingbooking.auth.dto.*;
 import uz.yusufjon.coworkingbooking.auth.service.AuthService;
+import uz.yusufjon.coworkingbooking.auth.service.PasswordResetService;
 import uz.yusufjon.coworkingbooking.common.response.ApiResponse;
 import uz.yusufjon.coworkingbooking.security.service.CustomUserDetails;
 
@@ -26,6 +24,32 @@ import uz.yusufjon.coworkingbooking.security.service.CustomUserDetails;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+        passwordResetService.forgotPassword(request);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "If this email exists, password reset instructions have been sent",
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        passwordResetService.resetPassword(request);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Password has been reset successfully", null)
+        );
+    }
 
     @PostMapping("/register")
     @Operation(summary = "Register a new customer account", description = "Creates a new customer and returns access and refresh tokens.")

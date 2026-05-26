@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: coworking-booking-db
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:-15436}:5432"
+    volumes:
+      - coworking-booking-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coworking-booking-app
+    env_file:
+      - .env.production
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+
+      APP_JWT_SECRET: ${APP_JWT_SECRET}
+      APP_JWT_ACCESS_TOKEN_EXPIRATION: ${APP_JWT_ACCESS_TOKEN_EXPIRATION}
+      APP_JWT_REFRESH_TOKEN_EXPIRATION: ${APP_JWT_REFRESH_TOKEN_EXPIRATION}
+
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+
+      PASSWORD_RESET_EMAIL_ENABLED: ${PASSWORD_RESET_EMAIL_ENABLED}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: ${MANAGEMENT_HEALTH_MAIL_ENABLED}
+
+      SERVER_PORT: ${SERVER_PORT}
+      JAVA_OPTS: ${JAVA_OPTS}
+    ports:
+      - "127.0.0.1:${APP_HOST_PORT:-8082}:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8082/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  coworking-booking-postgres-data:
