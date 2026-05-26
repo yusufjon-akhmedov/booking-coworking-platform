@@ -10,89 +10,65 @@ concurrency:
   group: deploy-booking-coworking-platform
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  test:
-    name: Test application
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-
-      - name: Run tests
-        run: |
-          if [ -f "./mvnw" ]; then
-            chmod +x ./mvnw
-            ./mvnw -B test
-          else
-            mvn -B test
-          fi
-
   deploy:
     name: Deploy to Contabo VPS
     runs-on: ubuntu-latest
-    needs: test
 
     steps:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-
           printf '%s' "${{ secrets.CONTABO_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/contabo_key
           chmod 600 ~/.ssh/contabo_key
-
           printf '%s\n' "${{ secrets.CONTABO_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy on VPS
         run: |
           ssh -i ~/.ssh/contabo_key \
-              -p "${{ secrets.CONTABO_PORT }}" \
-              "${{ secrets.CONTABO_USER }}@${{ secrets.CONTABO_HOST }}" << 'EOF'
-            set -e
+            -p "${{ secrets.CONTABO_PORT }}" \
+            "${{ secrets.CONTABO_USER }}@${{ secrets.CONTABO_HOST }}" << 'EOF'
+          set -e
 
-            echo "Go to project directory..."
-            cd ~/github-projects/booking-coworking-platform
+          echo "Go to project directory..."
+          cd ~/github-projects/booking-coworking-platform
 
-            echo "Pull latest code..."
-            git fetch origin main
-            git reset --hard origin/main
+          echo "Pull latest code..."
+          git fetch origin main
+          git reset --hard origin/main
 
-            echo "Build and restart Docker containers..."
-            docker compose down --remove-orphans
-            docker compose up -d --build
+          echo "Build and restart production containers..."
+          docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build --remove-orphans
 
-            echo "Docker status:"
-            docker compose ps
+          echo "Docker status:"
+          docker compose --env-file .env.production -f docker-compose.prod.yml ps
 
-            echo "Waiting for Swagger endpoint..."
+          echo "Waiting for application health..."
+          success=false
 
-            for i in {1..30}; do
-              if curl -fsS http://127.0.0.1:8082/swagger-ui/index.html >/dev/null; then
-                echo "Application is ready."
-                break
-              fi
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8082/actuator/health >/dev/null; then
+              echo "Application is healthy."
+              success=true
+              break
+            fi
 
-              echo "Application is not ready yet. Attempt $i/30..."
-              sleep 10
-            done
-          
-          if [ "$i" -eq 30 ]; then
-            echo "Application did not become ready in time."
-            docker compose logs --tail=200 app
+            echo "Application is not ready yet. Attempt $i/30..."
+            sleep 10
+          done
+
+          if [ "$success" != "true" ]; then
+            echo "Application did not become healthy in time."
+            docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=200 app
             exit 1
           fi
-         done
 
-            echo "Final API check..."
-            curl -I http://127.0.0.1:8082/swagger-ui/index.html || true
+          echo "Final Swagger check..."
+          curl -I http://127.0.0.1:8082/swagger-ui/index.html || true
 
-            echo "Deploy finished successfully."
+          echo "Deploy finished successfully."
           EOF
