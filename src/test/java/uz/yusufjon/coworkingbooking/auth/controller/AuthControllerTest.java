@@ -8,11 +8,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import uz.yusufjon.coworkingbooking.auth.dto.AuthResponse;
-import uz.yusufjon.coworkingbooking.auth.dto.LoginRequest;
-import uz.yusufjon.coworkingbooking.auth.dto.RefreshTokenRequest;
-import uz.yusufjon.coworkingbooking.auth.dto.RegisterRequest;
+import uz.yusufjon.coworkingbooking.auth.dto.*;
 import uz.yusufjon.coworkingbooking.auth.service.AuthService;
+import uz.yusufjon.coworkingbooking.auth.service.PasswordResetService;
 import uz.yusufjon.coworkingbooking.config.SecurityConfig;
 import uz.yusufjon.coworkingbooking.security.JwtAccessDeniedHandler;
 import uz.yusufjon.coworkingbooking.security.JwtAuthenticationEntryPoint;
@@ -22,8 +20,7 @@ import uz.yusufjon.coworkingbooking.security.service.CustomUserDetailsService;
 import uz.yusufjon.coworkingbooking.user.entity.Role;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,6 +44,73 @@ class AuthControllerTest {
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockBean
+    private PasswordResetService passwordResetService;
+
+
+    @Test
+    void forgotPasswordReturnsOkResponse() throws Exception {
+        ForgotPasswordRequest request = new ForgotPasswordRequest();
+        request.setEmail("test@gmail.com");
+
+        doNothing().when(passwordResetService).forgotPassword(any(ForgotPasswordRequest.class));
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message")
+                        .value("If this email exists, password reset instructions have been sent"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verify(passwordResetService).forgotPassword(any(ForgotPasswordRequest.class));
+    }
+
+    @Test
+    void forgotPasswordWhenEmailIsInvalidReturnsBadRequest() throws Exception {
+        ForgotPasswordRequest request = new ForgotPasswordRequest();
+        request.setEmail("invalid-email");
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(passwordResetService);
+    }
+
+    @Test
+    void resetPasswordReturnsOkResponse() throws Exception {
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setToken("valid-reset-token");
+        request.setNewPassword("NewPass123!");
+
+        doNothing().when(passwordResetService).resetPassword(any(ResetPasswordRequest.class));
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password has been reset successfully"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verify(passwordResetService).resetPassword(any(ResetPasswordRequest.class));
+    }
+
+    @Test
+    void resetPasswordWhenRequestBodyIsInvalidReturnsBadRequest() throws Exception {
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setToken("");
+        request.setNewPassword("123");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(passwordResetService);
+    }
 
     @Test
     void registerReturnsCreatedResponse() throws Exception {
