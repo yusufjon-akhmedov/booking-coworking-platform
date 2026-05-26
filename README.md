@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/yusufjon-akhmedov/booking-coworking-platform/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/yusufjon-akhmedov/booking-coworking-platform/actions/workflows/CI.yml)
 
+[![Deploy to Contabo](https://github.com/yusufjon-akhmedov/booking-coworking-platform/actions/workflows/DEPLOY.yml/badge.svg)](https://github.com/yusufjon-akhmedov/booking-coworking-platform/actions/workflows/DEPLOY.yml)
+
 > JWT authentication, refresh/logout flow, RBAC, room management, booking lifecycle, availability search, scheduled completion
 
 **Coworking Booking Platform API** is a monolithic REST backend for managing coworking rooms and reservations with JWT bearer tokens, role-based access control, PostgreSQL persistence via Flyway migrations, and Swagger UI for interactive API testing. It handles user registration and login, refresh-token rotation and logout, current-user profile access, admin customer management, room CRUD-style administration, room availability search, booking create/detail/cancel/reschedule/history flows, and automatic completion of past confirmed bookings.
