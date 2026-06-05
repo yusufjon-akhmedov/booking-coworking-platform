@@ -113,6 +113,17 @@ All versions are aligned with this service's `pom.xml`.
 
 ---
 
+## Demo users
+
+Use these seeded accounts to test authenticated flows locally through Swagger UI or any API client:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@coworking.uz` | `Admin@2026Demo!` |
+| Customer | `customer@coworking.uz` | `Customer@2026Demo!` |
+
+---
+
 ## Main routes
 
 | Path | Methods | Access | Notes |
