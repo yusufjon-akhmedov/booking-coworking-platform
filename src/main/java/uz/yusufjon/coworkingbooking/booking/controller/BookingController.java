@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +24,12 @@ import uz.yusufjon.coworkingbooking.booking.dto.CreateBookingRequest;
 import uz.yusufjon.coworkingbooking.booking.dto.RescheduleBookingRequest;
 import uz.yusufjon.coworkingbooking.booking.entity.BookingStatus;
 import uz.yusufjon.coworkingbooking.booking.service.BookingService;
+import uz.yusufjon.coworkingbooking.common.openapi.AdminOnlyApiResponses;
+import uz.yusufjon.coworkingbooking.common.openapi.CancelBookingApiResponses;
+import uz.yusufjon.coworkingbooking.common.openapi.CommonApiResponses;
+import uz.yusufjon.coworkingbooking.common.openapi.CreateBookingApiResponses;
+import uz.yusufjon.coworkingbooking.common.openapi.CustomerOnlyApiResponses;
+import uz.yusufjon.coworkingbooking.common.openapi.UpdateBookingApiResponses;
 import uz.yusufjon.coworkingbooking.common.response.ApiResponse;
 import uz.yusufjon.coworkingbooking.common.response.PageResponse;
 import uz.yusufjon.coworkingbooking.security.service.CustomUserDetails;
@@ -44,13 +49,7 @@ public class BookingController {
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
     @Operation(summary = "Create a booking", description = "Creates a booking for the authenticated customer if the selected room and time slot are available.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Booking created successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request data or room is inactive", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Customer role required", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Booking conflict detected", content = @Content)
-    })
+    @CreateBookingApiResponses
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @Valid @RequestBody CreateBookingRequest request
@@ -63,11 +62,8 @@ public class BookingController {
     @GetMapping("/me")
     @PreAuthorize("hasRole('CUSTOMER')")
     @Operation(summary = "List my bookings", description = "Returns all bookings that belong to the authenticated customer.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Bookings fetched successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Customer role required", content = @Content)
-    })
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Bookings fetched successfully")
+    @CustomerOnlyApiResponses
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getMyBookings(
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
@@ -78,12 +74,8 @@ public class BookingController {
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "List all bookings for admins", description = "Returns a paginated booking list with optional filters by status, room, and time range. Admin only.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Bookings fetched successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid filter values", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Admin role required", content = @Content)
-    })
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Bookings fetched successfully")
+    @AdminOnlyApiResponses
     public ResponseEntity<ApiResponse<PageResponse<BookingResponse>>> getAdminBookings(
             @Parameter(description = "Filter by booking status") @RequestParam(required = false) BookingStatus status,
             @Parameter(description = "Filter by room id") @RequestParam(required = false) Long roomId,
@@ -98,12 +90,8 @@ public class BookingController {
     @GetMapping("/history")
     @PreAuthorize("hasRole('CUSTOMER')")
     @Operation(summary = "Get my booking history", description = "Returns a paginated booking history for the authenticated customer with optional filters.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Booking history fetched successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid filter values", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Customer role required", content = @Content)
-    })
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Booking history fetched successfully")
+    @CustomerOnlyApiResponses
     public ResponseEntity<ApiResponse<PageResponse<BookingResponse>>> getBookingHistory(
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @Parameter(description = "Filter by booking status") @RequestParam(required = false) BookingStatus status,
@@ -126,12 +114,10 @@ public class BookingController {
     @GetMapping("/{bookingId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')")
     @Operation(summary = "Get booking details", description = "Returns detailed booking information. Customers can only access their own bookings; admins can access any booking.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Booking details fetched successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Booking not found", content = @Content)
-    })
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Booking details fetched successfully")
+    @CommonApiResponses
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied", content = @Content)
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Booking not found", content = @Content)
     public ResponseEntity<ApiResponse<BookingDetailResponse>> getBookingDetails(
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @PathVariable Long bookingId
@@ -147,13 +133,7 @@ public class BookingController {
     @PatchMapping("/{bookingId}/cancel")
     @PreAuthorize("hasRole('CUSTOMER')")
     @Operation(summary = "Cancel my booking", description = "Cancels a booking that belongs to the authenticated customer.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Booking cancelled successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Booking cannot be cancelled in its current state", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Booking does not belong to the current customer", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Booking not found", content = @Content)
-    })
+    @CancelBookingApiResponses
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @PathVariable Long bookingId,
@@ -166,14 +146,7 @@ public class BookingController {
     @PatchMapping("/{bookingId}/reschedule")
     @PreAuthorize("hasRole('CUSTOMER')")
     @Operation(summary = "Reschedule my booking", description = "Moves a booking that belongs to the authenticated customer to a new valid time slot.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Booking rescheduled successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request data or booking cannot be rescheduled", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Booking does not belong to the current customer", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Booking not found", content = @Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Booking conflict detected", content = @Content)
-    })
+    @UpdateBookingApiResponses
     public ResponseEntity<ApiResponse<BookingResponse>> rescheduleBooking(
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @PathVariable Long bookingId,
