@@ -1,0 +1,15 @@
+# monitoring/grafana/provisioning/datasources/prometheus.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Grafana auto-provisions this Prometheus datasource on first startup.
+# No manual UI configuration needed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090   # Docker service name
+    isDefault: true
+    editable: false

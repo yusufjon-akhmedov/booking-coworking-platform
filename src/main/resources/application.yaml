@@ -48,10 +48,24 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: "*"
+      base-path: /actuator
   endpoint:
     health:
-      show-details: never
+      show-details: always
+    Prometheus:
+      enabled: true
+
+  metrics:
+    tags:
+      application: ${coworking-booking}
+    distribution:
+
+      percentiles-histogram:
+        http.server.requests: true
+
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
 
   health:
     mail:
