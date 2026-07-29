@@ -1,0 +1,17 @@
+# monitoring/grafana/provisioning/dashboards/dashboard.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Tells Grafana where to find our pre-built dashboard JSON files.
+# They are mounted at /var/lib/grafana/dashboards inside the container.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: 1
+
+providers:
+  - name: 'coworking-dashboards'
+    orgId: 1
+    folder: 'Coworking Platform'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

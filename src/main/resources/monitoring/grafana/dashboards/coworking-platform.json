@@ -1,0 +1,234 @@
+{
+  "title": "Coworking Booking Platform",
+  "uid": "coworking-main",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "tags": ["coworking", "spring-boot"],
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "HTTP Request Rate (req/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"coworking-booking\"}[1m])) by (uri, method, status)",
+          "legendFormat": "{{method}} {{uri}} [{{status}}]",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } }
+      }
+    },
+
+    {
+      "id": 2,
+      "title": "HTTP P95 Latency (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"coworking-booking\"}[1m])) by (le, uri))",
+          "legendFormat": "p95 {{uri}}",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
+      }
+    },
+
+    {
+      "id": 3,
+      "title": "HTTP Error Rate (5xx)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"coworking-booking\", status=~\"5..\"}[1m])) by (uri)",
+          "legendFormat": "5xx {{uri}}",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "color": { "fixedColor": "red", "mode": "fixed" } }
+      }
+    },
+
+    {
+      "id": 4,
+      "title": "Active Bookings",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "booking_active_count{application=\"coworking-booking\"}",
+          "legendFormat": "Active",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "fixedColor": "green", "mode": "fixed" } }
+      }
+    },
+
+    {
+      "id": 5,
+      "title": "Active Rooms",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 8, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "room_active_count{application=\"coworking-booking\"}",
+          "legendFormat": "Rooms",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "fixedColor": "blue", "mode": "fixed" } }
+      }
+    },
+
+    {
+      "id": 6,
+      "title": "Booking Events Over Time",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(booking_created_total{application=\"coworking-booking\"}[5m])",
+          "legendFormat": "Created",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "rate(booking_cancelled_total{application=\"coworking-booking\"}[5m])",
+          "legendFormat": "Cancelled",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "rate(booking_completed_total{application=\"coworking-booking\"}[5m])",
+          "legendFormat": "Completed",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
+      }
+    },
+
+    {
+      "id": 7,
+      "title": "Auth Events Over Time",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(auth_login_success_total{application=\"coworking-booking\"}[5m])",
+          "legendFormat": "Login OK",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "rate(auth_login_failure_total{application=\"coworking-booking\"}[5m])",
+          "legendFormat": "Login FAIL",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "rate(auth_registration_total{application=\"coworking-booking\"}[5m])",
+          "legendFormat": "Registrations",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
+      }
+    },
+
+    {
+      "id": 8,
+      "title": "JVM Heap Memory Used",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{application=\"coworking-booking\", area=\"heap\"}",
+          "legendFormat": "{{id}}",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } }
+      }
+    },
+
+    {
+      "id": 9,
+      "title": "DB Connection Pool (HikariCP)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active{application=\"coworking-booking\"}",
+          "legendFormat": "Active",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "hikaricp_connections_idle{application=\"coworking-booking\"}",
+          "legendFormat": "Idle",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "hikaricp_connections_pending{application=\"coworking-booking\"}",
+          "legendFormat": "Pending (waiting)",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+      }
+    },
+
+    {
+      "id": 10,
+      "title": "Booking Creation Duration (P95)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(booking_creation_duration_seconds_bucket{application=\"coworking-booking\"}[5m])) by (le))",
+          "legendFormat": "p95",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(booking_creation_duration_seconds_bucket{application=\"coworking-booking\"}[5m])) by (le))",
+          "legendFormat": "p50 (median)",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
+      }
+    },
+
+    {
+      "id": 11,
+      "title": "Room Availability Searches",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(room_availability_search_total{application=\"coworking-booking\"}[5m])",
+          "legendFormat": "Searches/s",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
+      }
+    }
+
+  ]
+}
